@@ -31,6 +31,7 @@ RUN apt-get update && apt-get install -y \
     v4l-utils \
     libv4l-dev \
     libomp-dev \
+    nano \
     && rm -rf /var/lib/apt/lists/*
 
 # ================================
@@ -47,14 +48,14 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # ================================
-# OpenCV (usa el del sistema, estable)
+# OpenCV (usa el del sistema)
 # ================================
 RUN apt-get update && apt-get install -y \
     libopencv-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # ================================
-# Python ML stack (YOLO inferencia)
+# Python ML stack (YOLO)
 # ================================
 RUN pip3 install --no-cache-dir \
     torch \
@@ -67,10 +68,21 @@ RUN pip3 install --no-cache-dir \
     ultralytics
 
 # ================================
-# IFM3D SDK (desde source, obligatorio en ARM)
+# GPIO Raspberry Pi (CRÍTICO)
+# ================================
+RUN apt-get update && apt-get install -y \
+    python3-rpi.gpio \
+    pigpio \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip3 install --no-cache-dir \
+    RPi.GPIO \
+    pigpio
+
+# ================================
+# IFM3D SDK (desde source, ARM)
 # ================================
 WORKDIR /opt
-
 RUN git clone https://github.com/ifm/ifm3d.git && \
     cd ifm3d && \
     mkdir build && cd build && \
@@ -94,6 +106,5 @@ RUN mkdir -p src
 # ================================
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
-
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["bash"]
