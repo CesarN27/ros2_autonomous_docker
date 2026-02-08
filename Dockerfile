@@ -70,11 +70,12 @@ RUN pip3 install --no-cache-dir \
 # ================================
 # GPIO Raspberry Pi (CRÍTICO)
 # ================================
+# RPi.GPIO desde apt (sí existe)
 RUN apt-get update && apt-get install -y \
     python3-rpi.gpio \
-    pigpio \
     && rm -rf /var/lib/apt/lists/*
 
+# pigpio SOLO por pip (NO por apt)
 RUN pip3 install --no-cache-dir \
     RPi.GPIO \
     pigpio
