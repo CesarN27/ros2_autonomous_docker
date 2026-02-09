@@ -68,6 +68,14 @@ RUN pip3 install --no-cache-dir \
     ultralytics
 
 # ================================
+# libgpiod (GPIO moderno)
+# ================================
+RUN apt-get update && apt-get install -y \
+    gpiod \
+    python3-libgpiod \
+    && rm -rf /var/lib/apt/lists/*
+
+# ================================
 # GPIO Raspberry Pi (CRÍTICO)
 # ================================
 # RPi.GPIO desde apt (sí existe)
