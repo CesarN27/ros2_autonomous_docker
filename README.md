@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.png" alt="Project banner" width="100%">
+  <img src="assets/Diagram.jpeg" alt="Project banner" width="100%">
 </p>
 
 <h1 align="center">ROS2 Autonomous Docker</h1>
