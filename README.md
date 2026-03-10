@@ -42,6 +42,8 @@ The project integrates:
 ├── README.md
 └── CONTRIBUTING.md
 
+```
+
 ## Main Components
 
 ### `ros2_ws`
@@ -63,6 +65,7 @@ Calibration and AI experimentation area. This section contains training scripts,
 ```bash
 git clone <your-repository-url>
 cd ros2_autonomous_docker
+```
 
 ## Build the ROS 2 workspace
 
@@ -70,8 +73,10 @@ cd ros2_autonomous_docker
 cd ros2_ws/ros2_ws
 colcon build
 source install/setup.bash
+```
 
 ## Run a node
 
 ```bash
 ros2 run motor_controller <node_name>
+```
