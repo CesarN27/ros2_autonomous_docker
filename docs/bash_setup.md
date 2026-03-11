@@ -1,3 +1,5 @@
+```text
+
 # ~/.bashrc: executed by bash(1) for non-login shells.
 # see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
 # for examples
@@ -123,3 +125,5 @@ eval "$(pyenv virtualenv-init -)"
 
   fi
   elif [ -f /etc/bash_completion ]; then
+
+  ```
