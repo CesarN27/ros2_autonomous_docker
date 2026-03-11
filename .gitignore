@@ -1,0 +1,62 @@
+# =========================
+# ROS 2 / colcon
+# =========================
+build/
+install/
+log/
+
+**/build/
+**/install/
+**/log/
+
+# colcon markers
+COLCON_IGNORE
+.colcon_install_layout
+
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# egg / setuptools
+*.egg-info/
+.eggs/
+dist/
+*.egg
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# =========================
+# Editor / temp / backups
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.save
+*.save.*
+*.tmp
+
+# =========================
+# OS
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Logs
+# =========================
+*.log
+
+# =========================
+# Secrets
+# =========================
+.env
+.env.*
