@@ -47,11 +47,11 @@ Developer focused on robotics interfaces and real-time systems integration, cont
 
 Software Engineering student focused on embedded systems, data acquisition, electronic, and systems integration.
 
-- schema designer of the electrical conections
-- made all the enviorment on docker
-- loaded the main libraries on the dockerfile
-- development and training of the AI model and sensor´s calibration
-- testing and validation
+- Schema designer of the electrical conections
+- Made all the enviorment on docker
+- Loaded the main libraries on the dockerfile
+- Development and training of the AI model and sensor´s calibration
+- Testing and Validation
 
 ## Contribution Areas
 
