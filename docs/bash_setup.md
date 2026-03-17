@@ -109,21 +109,23 @@ fi
 if ! shopt -oq posix; then
   if [ -f /usr/share/bash-completion/bash_completion ]; then
     . /usr/share/bash-completion/bash_completion
-fi
-export PYENV_ROOT="$HOME/.pyenv"
-eval "$(pyenv init - bash)"
--v "$HOME/pruebas/rayo mc:/ros2_ws/src/sensor_ai" \
---device /dev/gpiomem \
---device /dev/gpiochip0 \
-ros2-autonomous-gpio'-v ~/ros2_ws:/ros2_ws \
---network host \
-alias ros2='docker run -it --rm --privileged \
-
-eval "$(pyenv virtualenv-init -)"
-[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
-. "$HOME/.local/bin/env"
-
-  fi
   elif [ -f /etc/bash_completion ]; then
+    . /etc/bash_completion
+  fi
+fi
+
+. "$HOME/.local/bin/env"
+export PYENV_ROOT="$HOME/.pyenv"
+[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init - bash)"
+eval "$(pyenv virtualenv-init -)"
+
+alias ros2='docker run -it --rm --privileged \
+--network host \
+-v ~/ros2_ws:/ros2_ws \
+-v "$HOME/pruebas/rayo_mc:/ros2_ws/src/sensor_ai" \
+-v /dev:/dev \
+-v /run/udev:/run/udev:ro \
+ros2-autonomous-gpio'
 
   ```

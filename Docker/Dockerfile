@@ -1,7 +1,7 @@
 # ================================
-# Base: Tu imagen actual para evitar reconstruir todo
+# Base oficial de ROS 2 Humble
 # ================================
-FROM ros2-autonomous-gpio:latest
+FROM ros:humble-ros-base-jammy
 
 ENV DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-c"]
@@ -22,6 +22,9 @@ RUN apt-get update && apt-get install -y \
     python3-pip \
     python3-dev \
     python3-numpy \
+    python3-colcon-common-extensions \
+    python3-rosdep \
+    python3-vcstool \
     libjpeg-dev \
     libpng-dev \
     libtiff-dev \
@@ -44,20 +47,59 @@ RUN apt-get update && apt-get install -y \
     ros-humble-image-transport \
     ros-humble-vision-opencv \
     ros-humble-rclcpp \
+    ros-humble-rclpy \
     ros-humble-sensor-msgs \
     ros-humble-geometry-msgs \
     ros-humble-nav-msgs \
     && rm -rf /var/lib/apt/lists/*
 
 # ================================
-# OpenCV (usa el del sistema)
+# OpenCV del sistema
 # ================================
 RUN apt-get update && apt-get install -y \
     libopencv-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # ================================
-# Python ML stack (YOLO)
+# Dependencias extra para libcamera / picamera2 / DRM
+# ================================
+RUN apt-get update && apt-get install -y \
+    python3-jinja2 \
+    python3-ply \
+    python3-yaml \
+    libgnutls28-dev \
+    openssl \
+    libudev-dev \
+    libgtest-dev \
+    qtbase5-dev \
+    libqt5core5a \
+    libqt5gui5 \
+    libqt5widgets5 \
+    qttools5-dev-tools \
+    libtiff5-dev \
+    libevent-dev \
+    libdrm-dev \
+    libcap-dev \
+    libfmt-dev \
+    libatlas-base-dev \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+# ================================
+# Motores modernos de compilacion Python
+# ================================
+RUN apt-get update && apt-get remove -y meson || true && rm -rf /var/lib/apt/lists/*
+
+RUN pip3 install --no-cache-dir --upgrade \
+    meson \
+    ninja \
+    pybind11
+
+RUN pip3 install --no-cache-dir --prefer-binary \
+    python-prctl
+
+# ================================
+# Python ML stack
 # ================================
 RUN pip3 install --no-cache-dir \
     torch \
@@ -67,15 +109,12 @@ RUN pip3 install --no-cache-dir \
     numpy \
     scipy \
     matplotlib \
-    ultralytics
+    ultralytics \
+    tensorflow \
+    joblib
 
 # ================================
-# Python ML stack (Nuevas dependencias)
-# ================================
-RUN pip3 install --no-cache-dir joblib tensorflow
-
-# ================================
-# Sklearn (CRÍTICO para ML, especialmente para pipelines y modelos preprocesados)
+# scikit-learn y dependencias
 # ================================
 RUN pip3 install --no-cache-dir --prefer-binary \
     "scikit-learn==1.7.2" \
@@ -83,20 +122,57 @@ RUN pip3 install --no-cache-dir --prefer-binary \
     "joblib==1.5.3"
 
 # ================================
-# GPIO Raspberry Pi (CRÍTICO)
+# GPIO Raspberry Pi
 # ================================
-# RPi.GPIO desde apt (sí existe)
 RUN apt-get update && apt-get install -y \
     python3-rpi.gpio \
     && rm -rf /var/lib/apt/lists/*
 
-# pigpio SOLO por pip (NO por apt)
 RUN pip3 install --no-cache-dir \
     RPi.GPIO \
     pigpio
 
 # ================================
-# IFM3D SDK (desde source, ARM)
+# Compilar libcamera nativo
+# ================================
+WORKDIR /opt
+RUN rm -rf libcamera && \
+    git clone https://github.com/raspberrypi/libcamera.git && \
+    cd libcamera && \
+    /usr/local/bin/meson setup build -Dpipelines=rpi/vc4,rpi/pisp -Dprefix=/usr && \
+    /usr/local/bin/ninja -C build install && \
+    ldconfig
+
+# ================================
+# Instalar Picamera2
+# ================================
+WORKDIR /opt
+RUN rm -rf picamera2 && \
+    git clone --depth 1 https://github.com/raspberrypi/picamera2.git && \
+    cd picamera2 && \
+    pip3 install --no-cache-dir .
+
+# ================================
+# Parche para kms.py
+# ================================
+RUN python3 - <<'PY' \
+import os, site; \
+paths = site.getsitepackages(); \
+target = None; \
+for p in paths: \
+    if "dist-packages" in p or "site-packages" in p: \
+        target = p; \
+        break; \
+if target is None: \
+    raise RuntimeError("No se encontro ruta de site-packages/dist-packages") \
+file_path = os.path.join(target, "kms.py"); \
+with open(file_path, "w", encoding="utf-8") as f: \
+    f.write("from unittest.mock import MagicMock\\nimport sys\\nsys.modules[__name__] = MagicMock()\\n") \
+print(f"Parche kms.py escrito en: {file_path}") \
+PY
+
+# ================================
+# IFM3D SDK
 # ================================
 WORKDIR /opt
 RUN rm -rf ifm3d && \
@@ -119,7 +195,13 @@ WORKDIR /ros2_ws
 RUN mkdir -p src
 
 # ================================
-# Entrypoint (Mantenemos la referencia de tu archivo original)
+# Inicializar rosdep (opcional, pero recomendable)
+# ================================
+RUN rosdep init || true
+RUN rosdep update || true
+
+# ================================
+# Entrypoint
 # ================================
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

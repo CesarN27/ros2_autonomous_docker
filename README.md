@@ -36,16 +36,43 @@ The project integrates:
 
 ```text
 .
-├── model_ai_calibration/
-├── ros2_ws/
-│   └── ros2_ws/
-│       └── src/
-│           └── motor_controller/
 ├── Docker/
+│   ├── Dockerfile
+│   └── entrypoint.sh
 ├── assets/
+│   ├── Diagram.jpeg
+│   ├── wiring.png
+│   ├── ros_graph.png
+│   └── demo.gif
 ├── docs/
+│   ├── environment_setup.md
+│   ├── hardware_setup.md
+│   ├── wiring.md
+│   ├── ros_nodes.md
+│   ├── calibration_pipeline.md
+│   ├── validation.md
+│   ├── known_limitations.md
+│   └── bom.md
+├── model_ai_calibration/
+│   ├── proyecto_calibracion/
+│   │   ├── calibracion_ultrasonico_40hz_test.csv
+│   │   ├── data_set_calibracion.csv
+│   │   ├── datos_prueba_ia.csv
+│   │   ├── train_model.py
+│   │   ├── test_model.py
+│   │   └── test_ia_tiempo_real.py
+│   └── rayo_mc/
+│       ├── auto_ia.py
+│       ├── modelo_calibracion.h5
+│       ├── modelo_calibracion.keras
+│       ├── modelo_calibracion_patched.h5
+│       └── scaler.pkl
+├── ros2_ws/
+│   └── src/
+│       └── motor_controller/
 ├── README.md
-└── CONTRIBUTING.md
+├── CONTRIBUTING.md
+└── LICENSE
 
 ```
 
@@ -116,23 +143,126 @@ This project integrates software, embedded systems, electronics, and AI-based ca
 
 ## 🚀 Getting Started
 
+### Prerequisites
+
+Before starting, make sure you have:
+
+- Docker installed and running
+- A Raspberry Pi 5 for GPIO and camera access
+- This repository cloned locally
+- The required hardware connected properly
+
+> Note: This project is intended to run on a Raspberry Pi 5 with hardware access enabled. Some features such as GPIO, camera streaming, and sensor interfacing will not work correctly on a standard desktop environment.
+
 ### Clone the repository
 
 ```bash
-git clone <https://github.com/CesarN27/ros2_autonomous_docker.git>
+git clone https://github.com/CesarN27/ros2_autonomous_docker.git
 cd ros2_autonomous_docker
 ```
 
-## Build the ROS 2 workspace
+### Build the Docker image
 
 ```bash
-cd ros2_ws/ros2_ws
+docker build -t ros2-autonomous-gpio -f Docker/Dockerfile .
+```
+
+### Run the Docker container
+```bash
+docker run -it --rm --privileged \
+  --network host \
+  -v $(pwd)/ros2_ws:/ros2_ws \
+  -v $(pwd)/model_ai_calibration:/ros2_ws/src/sensor_ai \
+  -v /dev:/dev \
+  -v /run/udev:/run/udev:ro \
+  ros2-autonomous-gpio
+```
+
+### Build the ROS 2 workspace
+
+Inside the container:
+
+```bash
+cd /ros2_ws
+rm -rf install build log
 colcon build
 source install/setup.bash
 ```
 
-## Run a node
+### Run a node
 
 ```bash
-ros2 run motor_controller <node_name>
+ros2 run motor_controller teleop_motor
 ```
+
+## 🧠 ROS 2 Nodes and Interfaces
+
+Main package: `motor_controller`
+
+Example executable nodes:
+- `teleop_motor`
+- `rayows`
+- `pruebarayo`
+
+
+## 🏗️ System Architecture
+
+```mermaid
+flowchart LR
+    APP[Mobile App / Teleoperation] -->|WebSocket / Commands| PI[Raspberry Pi 5]
+    HC[HC-SR04] --> PI
+    CAM[Pi Camera Module 3] --> PI
+    TOF[IFM O3D303] --> PI
+    PI --> ROS[ROS 2 Nodes]
+    ROS --> CTRL[Motor Control Logic]
+    CTRL --> HBRIDGE[H-Bridge Driver]
+    HBRIDGE --> MOTORS[DC Motors]
+    PI --> AI[AI Calibration / Inference]
+```
+
+## 🔌 Hardware Overview
+
+- Raspberry Pi 5 as the main embedded processing unit
+- HC-SR04 for short-range obstacle distance acquisition
+- Pi Camera Module 3 for visual perception
+- IFM O3D303 as planned ToF sensing module
+- H-bridge motor driver for actuation
+- DC motors for traction and steering
+- Voltage divider for safe HC-SR04 echo interfacing with Raspberry Pi GPIO
+
+## 📊 Results
+
+Current validated results include:
+
+- HC-SR04 raw distance acquisition tests
+- Calibration dataset generation
+- AI-based correction model training
+- Initial real-time inference tests
+- Teleoperation and motor actuation validation
+
+Example metrics to report:
+- Mean absolute error before calibration
+- Mean absolute error after calibration
+- Improvement percentage
+- Sampling frequency
+- Inference latency on Raspberry Pi 5
+
+## 🗺️ Roadmap
+
+- [x] Dockerized ROS 2 development environment
+- [x] Basic motor control package
+- [x] Keyboard-based teleoperation
+- [x] Ultrasonic dataset generation
+- [x] AI calibration model training
+- [ ] Pi Camera Module 3 integration
+- [ ] IFM O3D303 integration
+- [ ] Sensor fusion stage
+- [ ] Autonomous decision layer
+- [ ] Full perception-validation workflow on vehicle prototype
+
+## ⚠️ Current Limitations
+
+- The project is hardware-dependent and requires Raspberry Pi GPIO access
+- Camera and ToF integration are still under development
+- Validation has been focused mainly on ultrasonic calibration and motor control
+- Full multisensor fusion is not yet implemented
