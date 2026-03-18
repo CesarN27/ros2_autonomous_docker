@@ -7,7 +7,7 @@
     ROS 2 package for teleoperation and motor control of a 1:16 autonomous vehicle prototype.
   </description>
 
-  <maintainer email="maguillon21@alumnos.uaq.mx">Tu Nombre</maintainer>
+  <maintainer email="maguillon21@alumnos.uaq.mx">Moises_Aguillon</maintainer>
   <license>MIT</license>
 
   <depend>rclpy</depend>
