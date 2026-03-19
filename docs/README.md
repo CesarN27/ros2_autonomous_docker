@@ -18,7 +18,7 @@ The project is focused on the development of a **1:16 scale autonomous vehicle p
 
 ---
 
-## 1.0 Environment Setup
+## 1. Environment Setup
 
 ### 1.1 Purpose of the environment
 
@@ -104,7 +104,7 @@ This was especially useful because the same system needs to coordinate:
 - MJPEG video streaming,
 - and future camera / perception extensions.
 
-## 2.0 Hardware Setup
+## 2. Hardware Setup
 
 ### 2.1 Embebbed platform
 
@@ -150,7 +150,7 @@ The repository currently reflects at least these operating modes:
 - Mobile / WebSocket teleoperation in the rayows flow
 - Calibration-oriented sensing experiments using CSV datasets and trained models
 
-## 3.0 Wiring
+## 3. Wiring
 
 ### 3.1 General note
 
@@ -189,7 +189,7 @@ Because the HC-SR04 echo output can exceed safe logic levels for Raspberry Pi GP
 
 Suggested asset reference: **"../assets/wiring.png"**
 
-## 4.0 ROS Nodes
+## 4. ROS Nodes
 
 ### 4.1 Main package
 
@@ -379,7 +379,7 @@ Use this executable for:
 - live video observation,
 - early UI-driven control experiments.
 
-## 5.0 Calibration Pipeline
+## 5. Calibration Pipeline
 
 ### 5.1 Objective
 
@@ -442,7 +442,7 @@ features used by the model,
 chosen loss function and optimizer,
 inference latency on Raspberry Pi 5.
 
-## 6.0 Validation
+## 6. Validation
 
 ### 6.1 Current validation scope
 
@@ -512,7 +512,7 @@ one graph of raw vs corrected distance,
 
 one short GIF or video of motion + safety stopping behavior.
 
-## 7.0 Known Limitations
+## 7. Known Limitations
 
 ### 7.1 Hardware dependence
 
@@ -560,7 +560,7 @@ Some sections of the project are already structurally defined in the README, but
 - and clearer mode-by-mode execution notes.
 
 
-## 8.0 Bill of Materials
+## 8. Bill of Materials
 
 > Note: Costs should be updated according to your actual purchases or local supplier quotes.
 
