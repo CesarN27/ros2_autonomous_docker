@@ -45,14 +45,7 @@ The project integrates:
 │   ├── ros_graph.png
 │   └── demo.gif
 ├── docs/
-│   ├── environment_setup.md
-│   ├── hardware_setup.md
-│   ├── wiring.md
-│   ├── ros_nodes.md
-│   ├── calibration_pipeline.md
-│   ├── validation.md
-│   ├── known_limitations.md
-│   └── bom.md
+│   └── README.md
 ├── model_ai_calibration/
 │   ├── proyecto_calibracion/
 │   │   ├── calibracion_ultrasonico_40hz_test.csv
