@@ -34,11 +34,11 @@ This decision was made to simplify:
 
 Before running the project, make sure the following are available:
 
-- Docker installed and running
-- Raspberry Pi 5
-- Local clone of this repository
+- Raspberry Pi 5: Operative System: Raspberry OS Debian GNU/Linux 13.3 (trixie), Kernel: 6.12.62+rpt-rpi2712
 - Hardware connected and powered correctly
+- Local clone of this repository
 - Access to `/dev` and GPIO interfaces enabled through Docker runtime flags
+- Docker installed and running
 
 > **Note:** This repository is intended to run on a Raspberry Pi 5 with hardware access enabled. Features such as GPIO control, camera streaming, and sensor interfacing are hardware-dependent and may not work correctly on a standard desktop environment.
 
@@ -108,7 +108,7 @@ This was especially useful because the same system needs to coordinate:
 
 ### 2.1 Embebbed platform
 
-The prototype is built around a Raspberry Pi 5, used as the main embedded processing unit. In the context of this repository, the Raspberry Pi acts as the central node for:
+The prototype is built around a Raspberry Pi 5, used as the main embedded processing unit (ECU). In the context of this repository, the Raspberry Pi acts as the central node for:
 
 - ROS 2 execution,
 - motor control,
@@ -133,13 +133,14 @@ The current repository and README describe the following hardware stack:
 
 At a system level, the prototype is designed around the following flow:
 
-1. Teleoperation or higher-level commands generate motion references.
+1. Teleoperation (via movile application or via keybord conected directly on the ECU) or higher-level commands generate motion references.
 2. ROS 2 nodes transform those references into low-level motor actions.
 3. The ultrasonic subsystem monitors frontal distance.
-4. If a dangerous frontal condition is detected while the vehicle is moving forward, an emergency stop message is published.
-5. The motor controller reacts to /cmd_vel and /emergency_stop.
-6. The video subsystem provides a live MJPEG stream for remote observation.
-7. The AI calibration area supports data-driven improvement of ultrasonic distance estimation.
+4. If a static frontal condition is detected while the vehicle is moving forward, an emergency stop break is actived.
+5. If a frontal condition in movement is detected while the vehicle is moving forward, an emergency manager of motors power supply is actived.
+6. The motor controller reacts to /cmd_vel and /emergency_stop.
+7. The video subsystem provides a live MJPEG stream for remote observation.
+8. The AI calibration area supports data-driven improvement of ultrasonic distance estimation.
 
 ### 2.4 Operating modes
 
