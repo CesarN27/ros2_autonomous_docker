@@ -5,15 +5,15 @@
 <h1 align="center">ROS2-Based Autonomous Vehicle Prototype</h1>
 
 <p align="center">
-  Autonomous robotics and embedded experimentation with ROS 2, motor control, and AI-based sensor calibration.
+  Autonomous robotics and embedded experimentation with ROS 2, motor control, and AI-assisted ultrasonic calibration experiments.
 </p>
 
 <p align="center">
   <a href="#overview">Overview</a> •
-  <a href="#repository-structure">Repository Structure</a> •
-  <a href="#main-components">Main Components</a> •
+  <a href="#current-capabilities">Current Capabilities</a> •
+  <a href="#main-directories">Main Directories</a> •
   <a href="#getting-started">Getting Started</a> •
-  <a href="#technologies">Technologies</a> •
+  <a href="#documentation">Documentation</a> •
   <a href="CONTRIBUTING.md">Contributing</a>
 </p>
 
@@ -21,118 +21,71 @@
 
 ## 📘 Overview
 
-This repository contains the development environment, ROS 2 workspace, and calibration-related components for an autonomous robotics project, developed as a contribution to the PhD project **"Acquisition System and Data Processing for Autonomous Vehicles"**.
+This repository contains the ROS 2 workspace, Docker environment, embedded control logic, and calibration-related assets for a **1:14 scale autonomous vehicle prototype** developed on **Raspberry Pi 5**.
 
-This project proposes the acquisition of data through an embedded multisensory system and the processing of that data in a central electronic unit, such as an Electronic Control Unit (ECU) or Powertrain Control Module (PCM). By integrating the collected data and applying an artificial intelligence model for decision-making, the system aims to enable autonomous behavior in a 1:16 scale Porsche 911 GT3 RS vehicle prototype. This prototype serves as a preliminary validation platform before scaling the solution to a full-size 1:1 vehicle.
+The project is part of a broader research-oriented effort focused on **multisensory embedded systems for autonomous vehicles**, using a scaled platform as an initial validation environment before future migration to larger systems.
 
-The project integrates:
+At its current stage, the repository supports motor control, keyboard and mobile teleoperation, ultrasonic-based safety logic, MJPEG video streaming, and AI-assisted calibration experiments for distance sensing.
 
-- ROS 2 nodes for motor control and communication (autonomous and manual) for a 1:16 scale vehicle
-- Docker-based environment setup
-- AI-based calibration experiments for ultrasonic sensor data and autonomous driving
-- Supporting scripts, datasets, testing utilities and configuration components
+## 📌 Current Capabilities
 
-## 📂 Repository Structure
+- ROS 2-based motor control for a 1:14 scale vehicle
+- Keyboard teleoperation through terminal / SSH
+- Mobile teleoperation through WebSocket commands
+- Live MJPEG camera streaming
+- Ultrasonic obstacle monitoring and emergency-stop behavior
+- AI-assisted ultrasonic calibration workflow
+- Dockerized development and execution environment on Raspberry Pi 5
 
-```text
-.
-├── Docker/
-│   ├── Dockerfile
-│   └── entrypoint.sh
-├── assets/
-│   ├── Diagram.jpeg
-│   ├── wiring.png
-│   ├── ros_graph.png
-│   └── demo.gif
-├── docs/
-│   └── README.md
-├── model_ai_calibration/
-│   ├── proyecto_calibracion/
-│   │   ├── calibracion_ultrasonico_40hz_test.csv
-│   │   ├── data_set_calibracion.csv
-│   │   ├── datos_prueba_ia.csv
-│   │   ├── train_model.py
-│   │   ├── test_model.py
-│   │   └── test_ia_tiempo_real.py
-│   └── rayo_mc/
-│       ├── auto_ia.py
-│       ├── modelo_calibracion.h5
-│       ├── modelo_calibracion.keras
-│       ├── modelo_calibracion_patched.h5
-│       └── scaler.pkl
-├── ros2_ws/
-│   └── src/
-│       └── motor_controller/
-├── README.md
-├── CONTRIBUTING.md
-└── LICENSE
+## 📂 Main Directories
 
-```
+- `ros2_ws/`: ROS 2 workspace containing the `motor_controller` package and runtime nodes
+- `model_ai_calibration/`: datasets, training scripts, exported models, and calibration experiments
+- `Docker/`: containerized environment for reproducible setup and deployment
+- `docs/`: extended technical documentation, setup notes, and project references
 
-## 🧩 Main Components
 
-### `ros2_ws`
+## 🧩 Main Runtime Flows
 
-ROS 2 workspace containing the main package implementations, including motor control nodes, publishers, subscribers, and related tests.
-
-### `Docker`
-
-Containerized development environment used to support dependency management and project portability.
-
-### `model_ai_calibration`
-
-Calibration and AI experimentation area. This section contains training scripts, evaluation scripts, and calibration datasets for ultrasonic sensor behavior analysis.
+- **`teleop_motor`**: basic keyboard teleoperation for motor validation
+- **`pruebarayo`**: integrated keyboard control, ultrasonic safety, and AI-corrected validation flow
+- **`rayows`**: modular runtime for WebSocket teleoperation, MJPEG streaming, and integrated robot-side services
 
 ## 🛠️ Technologies
 
-This project integrates software, embedded systems, electronics, and AI-based calibration technologies for the development of an autonomous 1:16 scale vehicle prototype.
+This project integrates software, embedded systems, electronics, and AI-based calibration technologies for the development of an autonomous 1:14 scale vehicle prototype.
 
-### Software and Development
+### Software
+
 - Python 3.11.9
 - Docker
 - ROS 2 Humble
 - Linux / SSH remote access
 
 ### Embedded and Hardware
-- Raspberry Pi 5 as the main ECU
-- Ethernet and GPIO-based communication for sensor and actuator interfacing
-- DC motors
-- H-bridge motor driver
+
+- Raspberry Pi 5
 - HC-SR04 ultrasonic sensor
-- Pi cam module 3
-- ToF sensor O3D303
-- Power supply analysis for ECU, sensors, actuators, and onboard electronics
-- Voltage divider circuit for safe ultrasonic sensor integration
+- Pi Camera Module 3
+- IFM O3D303 ToF sensor (planned integration)
+- H-bridge motor driver
+- DC motors
+- GPIO-based actuator and sensor interfacing
 
 ### Robotics and Control
+
 - ROS 2 nodes for motor control and communication
 - Keyboard-based teleoperation (WASD over SSH)
-- Migration from manual keyboard input to sensor-based autonomous input
-- PWM-based motor speed control for acceleration and deceleration
+- Mobile app-based teleoperation through a joystick interface over WebSocket
+- Migration from manual input to sensor-based autonomous input
+- PWM-based motor speed control for acceleration, deceleration, and vehicle steering control
 
-### Data Processing and AI
-- Sensor calibration through raw data acquisition
-- CSV dataset generation for calibration and validation
-- Statistical analysis of measurement accuracy and error
-- Neural network models for sensor correction and prediction
-- MLP and FFN architectures
-- Adam optimizer and Leaky ReLU activation
-- Export of trained models in `.keras` and `.h5` formats
+### AI and Calibration
 
-### Planned Sensor Integration
-- Raspberry Pi Camera Module 3
-- IFM O3D303 Time-of-Flight sensor
-- ROS 2-based integration of camera and ToF sensor streams into the autonomous system
-- Camera calibration for perception and visual integration
-- Multisensory data acquisition for future perception and decision-making stages
-
-> Note: The Raspberry Pi Camera Module 3 is planned to be calibrated as part of the system integration process. The calibration of the IFM O3D303 is outside the scope of this repository. The main focus of this project is the ROS 2-based integration of both sensors into the multisensory embedded system.
-
-### Validation and Testing
-- Software and hardware connection validation
-- Unit testing for the HC-SR04 sensor
-- Calibration repeatability tests
-- Distance correction validation against real measured values
+- CSV-based dataset generation
+- Neural-network-based sensor correction
+- Exported .keras and .h5 models
+- Runtime calibration asset integration for validation flows
 
 ## 🚀 Getting Started
 
@@ -182,20 +135,36 @@ colcon build
 source install/setup.bash
 ```
 
+## 🧠 Available ROS 2 Executables
+
+Main package: `motor_controller`
+
 ### Run a node
 
 ```bash
 ros2 run motor_controller teleop_motor
 ```
 
-## 🧠 ROS 2 Nodes and Interfaces
+Other available executables:
 
-Main package: `motor_controller`
+```bash
+ros2 run motor_controller pruebarayo
+ros2 run motor_controller rayows
+```
 
-Example executable nodes:
-- `teleop_motor`
-- `rayows`
-- `pruebarayo`
+## 📱 Mobile App Integration
+
+This repository contains the ROS 2 runtime, embedded control logic, WebSocket bridge, and MJPEG streaming backend for the vehicle.
+
+The mobile control application is maintained in a separate repository:
+
+- **Mobile App Repository:** [RayoMacApp](https://github.com/Eto204/RayoMacApp)
+
+The external mobile app communicates with this repository through:
+- **WebSocket control:** `ws://<robot-ip>:8765/`
+- **MJPEG video stream:** `http://<robot-ip>:8080/stream`
+
+> Note: The mobile application is not included in this repository. This repository only provides the robot-side services consumed by the app.
 
 
 ## 🏗️ System Architecture
@@ -210,35 +179,43 @@ flowchart LR
     ROS --> CTRL[Motor Control Logic]
     CTRL --> HBRIDGE[H-Bridge Driver]
     HBRIDGE --> MOTORS[DC Motors]
-    PI --> AI[AI Calibration / Inference]
+    PI --> AI[AI Calibration Assets]
 ```
 
-## 🔌 Hardware Overview
+## 📚 Documentation
 
-- Raspberry Pi 5 as the main embedded processing unit
-- HC-SR04 for short-range obstacle distance acquisition
-- Pi Camera Module 3 for visual perception
-- IFM O3D303 as planned ToF sensing module
-- H-bridge motor driver for actuation
-- DC motors for traction and steering
-- Voltage divider for safe HC-SR04 echo interfacing with Raspberry Pi GPIO
+For detailed technical information, see:
 
-## 📊 Results
+- [Technical Documentation](docs/README.md)
+- [Bash setup guide](docs/bash_setup.md)
+- [Contributing guide](CONTRIBUTING.md)
 
-Current validated results include:
+The technical documentation includes:
 
-- HC-SR04 raw distance acquisition tests
+- Hardware setup and wiring
+- ROS 2 node descriptions
+- Calibration pipeline details
+- Validation scope
+- Known limitations
+- Bill of materials
+
+## 📊 Current Status
+
+Validated so far:
+
+- Motor actuation and teleoperation
+- HC-SR04 distance acquisition
+- Emergency-stop logic
+- MJPEG streaming backend
 - Calibration dataset generation
-- AI-based correction model training
-- Initial real-time inference tests
-- Teleoperation and motor actuation validation
+- AI model training and export
 
-Example metrics to report:
-- Mean absolute error before calibration
-- Mean absolute error after calibration
-- Improvement percentage
-- Sampling frequency
-- Inference latency on Raspberry Pi 5
+Under active development:
+
+- Camera integration refinement
+- IFM O3D303 integration
+- Multisensor fusion
+- Autonomous decision layer
 
 ## 🗺️ Roadmap
 
@@ -256,6 +233,6 @@ Example metrics to report:
 ## ⚠️ Current Limitations
 
 - The project is hardware-dependent and requires Raspberry Pi GPIO access
-- Camera and ToF integration are still under development
-- Validation has been focused mainly on ultrasonic calibration and motor control
 - Full multisensor fusion is not yet implemented
+- The mobile application is maintained in a separate repository
+- Some AI-assisted runtime features depend on external model assets being present

@@ -14,7 +14,7 @@ setup(
     zip_safe=True,
     maintainer="Moises_Aguillon_Cesar_Nuñes_Alejandro_Estrada",
     maintainer_email="maguillon21@alumnos.uaq.mx",
-    description="ROS 2 package for teleoperation and motor control of a 1:16 autonomous vehicle prototype.",
+    description="ROS 2 package for teleoperation and motor control of a 1:14 autonomous vehicle prototype.",
     license="MIT",
     entry_points={
         "console_scripts": [

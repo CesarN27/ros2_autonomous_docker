@@ -75,8 +75,8 @@ MJPEG_ENDPOINT = "/stream"
 
 # -----------------------------------------------------------------------------
 # Rutas de archivos IA
-# Nota: en esta versión actual no se usa la IA dentro del loop de seguridad,
-# pero se conservan estas rutas por compatibilidad / evolución futura.
+# Actualmente estas rutas son utilizadas por SafetyUltrasonicNode para aplicar
+# corrección de distancia cuando el modelo y el scaler están disponibles.
 # -----------------------------------------------------------------------------
 MODEL_PATH = "modelo_calibracion_patched.h5"
 SCALER_PATH = "scaler.pkl"
