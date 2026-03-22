@@ -4,7 +4,7 @@
   <name>motor_controller</name>
   <version>0.1.0</version>
   <description>
-    ROS 2 package for teleoperation and motor control of a 1:16 autonomous vehicle prototype.
+    ROS 2 package for teleoperation and motor control of a 1:14 autonomous vehicle prototype.
   </description>
 
   <maintainer email="maguillon21@alumnos.uaq.mx">Moises_Aguillon_Cesar_Nuñes_Alejandro_Estrada</maintainer>

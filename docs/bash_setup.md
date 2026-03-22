@@ -1,119 +1,34 @@
-```text
+# Bash Setup Guide
 
-# ~/.bashrc: executed by bash(1) for non-login shells.
-# see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
-# for examples
+This document describes the custom Bash shell configuration used to simplify development and execution of the project on the target Raspberry Pi environment.
 
-# If not running interactively, don't do anything
-case $- in
-    *i*) ;;
-      *) return;;
-esac
+## Purpose
 
-# don't put duplicate lines or lines starting with space in the history.
-# See bash(1) for more options
-HISTCONTROL=ignoreboth
+The project uses a customized Bash setup to make the local workflow faster, more consistent, and easier to reproduce during development and testing.
 
-# append to the history file, don't overwrite it
-shopt -s histappend
+The main goals of this configuration are:
 
-# for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
-HISTSIZE=1000
-HISTFILESIZE=2000
+- initialize the local Python environment with `pyenv`
+- load user-local environment variables when available
+- provide a shortcut command to start the Dockerized ROS 2 environment used by the project
 
-# check the window size after each command and, if necessary,
-# update the values of LINES and COLUMNS.
-shopt -s checkwinsize
+## Scope
 
-# If set, the pattern "**" used in a pathname expansion context will
-# match all files and zero or more directories and subdirectories.
-#shopt -s globstar
+The full `~/.bashrc` file on the Raspberry Pi contains many default Bash settings provided by the operating system, such as:
 
-# make less more friendly for non-text input files, see lesspipe(1)
-#[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
+- shell history configuration
+- prompt styling and colors
+- terminal title formatting
+- default aliases for `ls` and `grep`
+- Bash completion support
 
-# set variable identifying the chroot you work in (used in the prompt below)
-if [ -z "${debian_chroot:-}" ] && [ -r /etc/debian_chroot ]; then
-    debian_chroot=$(cat /etc/debian_chroot)
-fi
+These sections are not specific to this repository.
 
-# set a fancy prompt (non-color, unless we know we "want" color)
-case "$TERM" in
-    xterm-color|*-256color) color_prompt=yes;;
-esac
+This guide documents only the **project-specific customization block** added to the end of the shell configuration file.
 
-# uncomment for a colored prompt, if the terminal has the capability; turned
-# off by default to not distract the user: the focus in a terminal window
-# should be on the output of commands, not on the prompt
-force_color_prompt=yes
+## Project-Specific Bash Configuration
 
-if [ -n "$force_color_prompt" ]; then
-    if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
-	# We have color support; assume it's compliant with Ecma-48
-	# (ISO/IEC-6429). (Lack of such support is extremely rare, and such
-	# a case would tend to support setf rather than setaf.)
-	color_prompt=yes
-    else
-	color_prompt=
-    fi
-fi
-
-if [ "$color_prompt" = yes ]; then
-    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w \$\[\033[00m\] '
-else
-    PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
-fi
-unset color_prompt force_color_prompt
-
-# If this is an xterm set the title to user@host:dir
-case "$TERM" in
-xterm*|rxvt*)
-    PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
-    ;;
-*)
-    ;;
-esac
-
-# enable color support of ls and also add handy aliases
-if [ -x /usr/bin/dircolors ]; then
-    test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
-    alias ls='ls --color=auto'
-    #alias dir='dir --color=auto'
-    #alias vdir='vdir --color=auto'
-
-    alias grep='grep --color=auto'
-    alias fgrep='fgrep --color=auto'
-    alias egrep='egrep --color=auto'
-fi
-
-# colored GCC warnings and errors
-#export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
-
-# some more ls aliases
-#alias ll='ls -l'
-#alias la='ls -A'
-#alias l='ls -CF'
-
-# Alias definitions.
-# You may want to put all your additions into a separate file like
-# ~/.bash_aliases, instead of adding them here directly.
-# See /usr/share/doc/bash-doc/examples in the bash-doc package.
-
-if [ -f ~/.bash_aliases ]; then
-    . ~/.bash_aliases
-fi
-
-# enable programmable completion features (you don't need to enable
-# this, if it's already enabled in /etc/bash.bashrc and /etc/profile
-# sources /etc/bash.bashrc).
-if ! shopt -oq posix; then
-  if [ -f /usr/share/bash-completion/bash_completion ]; then
-    . /usr/share/bash-completion/bash_completion
-  elif [ -f /etc/bash_completion ]; then
-    . /etc/bash_completion
-  fi
-fi
-
+```bash
 . "$HOME/.local/bin/env"
 export PYENV_ROOT="$HOME/.pyenv"
 [[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
@@ -127,5 +42,133 @@ alias ros2='docker run -it --rm --privileged \
 -v /dev:/dev \
 -v /run/udev:/run/udev:ro \
 ros2-autonomous-gpio'
+```
 
-  ```
+## Configuration Breakdown
+
+### 1. Load local user environment
+
+```bash
+. "$HOME/.local/bin/env"
+```
+
+This line loads additional user-local environment configuration if that file exists and has been created by the local system setup.
+
+It is useful when the local shell environment depends on user-installed tools or paths managed outside the default system configuration.
+
+### 2. Initialize `pyenv`
+
+```bash
+export PYENV_ROOT="$HOME/.pyenv"
+[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init - bash)"
+eval "$(pyenv virtualenv-init -)"
+```
+
+These lines configure `pyenv` and `pyenv-virtualenv`, allowing Python versions and Python environments to be managed consistently in each shell session.
+
+This is helpful for calibration scripts, training scripts, testing utilities, or other Python-based tooling used during experimentation.
+
+### 3. Define a Docker shortcut for the project runtime
+
+```bash
+alias ros2='docker run -it --rm --privileged \
+--network host \
+-v ~/ros2_ws:/ros2_ws \
+-v "$HOME/pruebas/rayo_mc:/ros2_ws/src/sensor_ai" \
+-v /dev:/dev \
+-v /run/udev:/run/udev:ro \
+ros2-autonomous-gpio'
+```
+
+This alias defines a shortcut command that launches the project's Docker container with the required hardware access, mounted volumes, and host networking.
+
+Its purpose is to simplify repeated startup of the ROS 2 development and runtime environment on the Raspberry Pi.
+
+## Docker Alias Details
+
+The alias launches the container with the following behavior:
+
+- `-it`: starts an interactive terminal session
+- `--rm`: automatically removes the container when it exits
+- `--privileged`: grants extended hardware/device access required by the project
+- `--network host`: shares the host network for ROS 2 communication and remote interfaces
+- `-v ~/ros2_ws:/ros2_ws`: mounts the local ROS 2 workspace into the container
+- `-v "$HOME/pruebas/rayo_mc:/ros2_ws/src/sensor_ai"`: mounts the calibration/model directory into the container
+- `-v /dev:/dev`: gives the container access to device files
+- `-v /run/udev:/run/udev:ro`: exposes udev information in read-only mode
+- `ros2-autonomous-gpio`: Docker image used by the project
+
+## Important Note About the Alias
+
+Although the alias is named `ros2`, it does not invoke the native ROS 2 CLI installed on the host system.
+
+Instead, it starts the project's Docker container.
+
+For that reason, the alias should be understood as a project runtime shortcut, not as a replacement for the standard `ros2` command in a regular ROS 2 installation.
+
+## Requirements
+
+Before using this configuration, make sure the following are available:
+
+- Docker is installed and running
+- the Docker image `ros2-autonomous-gpio` has already been built
+- the local workspace exists at `~/ros2_ws`
+- the calibration/model directory exists at `$HOME/pruebas/rayo_mc`
+- `pyenv` and `pyenv-virtualenv` are installed if Python environment management is needed
+
+## How to Apply the Configuration
+
+Open the Bash configuration file:
+
+```bash
+nano ~/.bashrc
+```
+
+Add the project-specific block at the end of the file.
+
+Then reload the shell configuration:
+
+```bash
+source ~/.bashrc
+```
+
+## Example Usage
+
+After reloading the shell, run:
+
+```bash
+ros2
+```
+
+This will start the Dockerized project environment using the predefined runtime configuration.
+
+## Reference Snippet
+
+The following is the exact project-specific block currently used in the development shell configuration:
+
+```bash
+. "$HOME/.local/bin/env"
+export PYENV_ROOT="$HOME/.pyenv"
+[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init - bash)"
+eval "$(pyenv virtualenv-init -)"
+
+alias ros2='docker run -it --rm --privileged \
+--network host \
+-v ~/ros2_ws:/ros2_ws \
+-v "$HOME/pruebas/rayo_mc:/ros2_ws/src/sensor_ai" \
+-v /dev:/dev \
+-v /run/udev:/run/udev:ro \
+ros2-autonomous-gpio'
+```
+
+## Recommended Future Improvement
+
+For clarity, a future revision could rename the alias from `ros2` to something more explicit, such as:
+
+- `rayo_ros2`
+- `ros2_docker`
+- `rayo_env`
+
+This would reduce confusion with the standard ROS 2 command-line interface.

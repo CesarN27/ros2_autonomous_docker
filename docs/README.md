@@ -2,7 +2,9 @@
 
 This document describes the technical structure, deployment rationale, hardware configuration, ROS 2 nodes, and validation scope of the **ROS2-Based Autonomous Vehicle Prototype** repository.
 
-The project is focused on the development of a **1:16 scale autonomous vehicle prototype** based on **ROS 2**, **Docker**, **Raspberry Pi 5**, and an initial **AI-assisted calibration workflow** for ultrasonic sensing. The repository serves as a development and validation platform for a multisensory embedded system intended to support future perception and autonomous decision-making stages.
+This project focuses on the development of a **1:14 scale autonomous vehicle prototype** based on **ROS 2**, **Docker**, **Raspberry Pi 5**, and an initial **AI-assisted calibration workflow** for ultrasonic sensing. The repository serves as a development and validation platform for a multisensory embedded system within a broader research-oriented effort on **multisensory embedded systems for autonomous vehicles**, using a scaled platform as an initial validation environment before future migration to larger systems.
+
+> For the project overview, quick start instructions, and repository entry point, see the main [README](../README.md).
 
 ---
 
@@ -17,6 +19,58 @@ The project is focused on the development of a **1:16 scale autonomous vehicle p
 - [8. Bill of Materials](#8-bill-of-materials)
 
 ---
+
+## 📂 Repository Structure
+
+```text
+.
+├── Docker/
+│   ├── Dockerfile
+│   └── entrypoint.sh
+├── assets/
+│   ├── Diagram.jpeg
+│   ├── wiring.png
+│   ├── ros_graph.png
+│   └── demo.gif
+├── docs/
+│   ├── README.md
+│   └── bash_setup.md
+├── model_ai_calibration/
+│   ├── proyecto_calibracion/
+│   │   ├── calibracion_ultrasonico_40hz_test.csv
+│   │   ├── data_set_calibracion.csv
+│   │   ├── datos_prueba_ia.csv
+│   │   ├── train_model.py
+│   │   ├── test_model.py
+│   │   └── test_ia_tiempo_real.py
+│   └── rayo_mc/
+│       ├── auto_ia.py
+│       ├── modelo_calibracion.h5
+│       ├── modelo_calibracion.keras
+│       ├── modelo_calibracion_patched.h5
+│       └── scaler.pkl
+├── ros2_ws/
+│   └── src/
+│       └── motor_controller/
+│           ├── package.xml
+│           ├── setup.py
+│           └── motor_controller/
+│               ├── __init__.py
+│               ├── camera_stream.py
+│               ├── config.py
+│               ├── fuzzy.py
+│               ├── mjpeg_server.py
+│               ├── motor_controller_node.py
+│               ├── pruebarayo.py
+│               ├── rayows.py
+│               ├── safety_ultrasonic_node.py
+│               ├── teleop_motor_node.py
+│               ├── video_state.py
+│               └── websocket_bridge.py
+├── README.md
+├── CONTRIBUTING.md
+└── LICENSE
+```
 
 ## 1. Environment Setup
 
@@ -34,11 +88,17 @@ This decision was made to simplify:
 
 Before running the project, make sure the following are available:
 
-- Raspberry Pi 5: Operative System: Raspberry OS Debian GNU/Linux 13.3 (trixie), Kernel: 6.12.62+rpt-rpi2712
-- Hardware connected and powered correctly
-- Local clone of this repository
-- Access to `/dev` and GPIO interfaces enabled through Docker runtime flags
+- Raspberry Pi 5
 - Docker installed and running
+- Local clone of this repository
+- Hardware properly connected and powered
+- Access to `/dev` and GPIO interfaces enabled through Docker runtime flags
+- Camera interface enabled, if MJPEG streaming will be used
+- Local network connectivity, if teleoperation from the external mobile app will be used
+
+Reference development environment:
+- Raspberry Pi OS (Debian GNU/Linux 13.3 "trixie")
+- Kernel version: `6.12.62+rpt-rpi2712`
 
 > **Note:** This repository is intended to run on a Raspberry Pi 5 with hardware access enabled. Features such as GPIO control, camera streaming, and sensor interfacing are hardware-dependent and may not work correctly on a standard desktop environment.
 
@@ -76,7 +136,7 @@ colcon build
 source install/setup.bash
 ```
 
-### Run executable nodes
+### 1.7 Run executable nodes
 
 Example:
 
@@ -106,7 +166,7 @@ This was especially useful because the same system needs to coordinate:
 
 ## 2. Hardware Setup
 
-### 2.1 Embebbed platform
+### 2.1 Embedded platform
 
 The prototype is built around a Raspberry Pi 5, used as the main embedded processing unit (ECU). In the context of this repository, the Raspberry Pi acts as the central node for:
 
@@ -129,66 +189,105 @@ The current repository and README describe the following hardware stack:
 - DC motors for motion
 - Voltage divider for safe ultrasonic echo integration to Raspberry Pi GPIO
 
-### 2.3 Functional architecture
+### 2.3 Functional Architecture
 
-At a system level, the prototype is designed around the following flow:
+At the system level, the prototype is organized around the following flow:
 
-1. Teleoperation (via movile application or via keybord conected directly on the ECU) or higher-level commands generate motion references.
-2. ROS 2 nodes transform those references into low-level motor actions.
-3. The ultrasonic subsystem monitors frontal distance.
-4. If a static frontal condition is detected while the vehicle is moving forward, an emergency stop break is actived.
-5. If a frontal condition in movement is detected while the vehicle is moving forward, an emergency manager of motors power supply is actived.
-6. The motor controller reacts to /cmd_vel and /emergency_stop.
-7. The video subsystem provides a live MJPEG stream for remote observation.
-8. The AI calibration area supports data-driven improvement of ultrasonic distance estimation.
+1. Teleoperation commands, either from an external mobile application over WebSocket or from a keyboard connected directly to the ECU, generate motion references.
+2. ROS 2 nodes translate those references into low-level traction and steering actions.
+3. The ultrasonic subsystem continuously monitors the frontal distance.
+4. When calibration assets are available, the safety subsystem applies AI-assisted correction to ultrasonic distance estimation.
+5. A fuzzy safety layer computes a speed-reduction factor based on the measured frontal distance and publishes it to modulate motor power during forward motion.
+6. If a critical frontal stop condition is detected while the vehicle is moving forward, emergency braking is activated through `/emergency_stop`.
+7. The motor controller reacts to `/cmd_vel`, `/fuzzy_cmd`, and `/emergency_stop`.
+8. The video subsystem provides a live MJPEG stream for remote monitoring.
+9. The AI calibration area supports data-driven improvement of ultrasonic distance estimation.
 
-### 2.4 Operating modes
+### 2.4 Operating Modes and Runtime Flows
 
-The repository currently reflects at least these operating modes:
+The repository currently reflects at least these operating modes and runtime flows:
 
 - Manual keyboard teleoperation through ROS 2
-- Safety-assisted operation using ultrasonic braking logic
-- Mobile / WebSocket teleoperation in the rayows flow
+- Mobile / WebSocket teleoperation in the `rayows` flow
+- Safety-assisted operation with fuzzy speed regulation based on frontal obstacle distance
+- Emergency-stop protection for critical frontal obstacles during forward motion
 - Calibration-oriented sensing experiments using CSV datasets and trained models
 
 ## 3. Wiring
 
-### 3.1 General note
+### 3.1 General Note
 
-This section documents the GPIO mappings currently visible in the repository source code. Because the project contains more than one executable flow, the exact motor pin mapping differs between scripts.
+This section defines the canonical GPIO mapping for the project.
 
-For that reason, this section should be treated as a technical reference draft, and the final version should reflect the wiring that your team decides to keep as the canonical hardware configuration.
+The following tables describe the reference hardware wiring used for the Raspberry Pi 5, the HC-SR04 ultrasonic sensor, and the L298N motor driver. This documented configuration should be treated as the official connection model for integration, validation, and future maintenance of the system.
 
-| Pin Raspberry |   GPIO   | Specification |  Module  | Function |
-| ------------- | -------: | ------------- | -------- | -------- |
-|       4       | 5V power |      Vcc      |  HC-SR04 |    Vcc   |
-|       9       |  Ground  |     Ground    |  HC-SR04 |    Gnd   |
-|       36      |  GPIO 16 |    GPIO 16    |  HC-SR04 |    Trig  |
-|       38      |  GPIO 20 |    PCM_DIN    |  HC-SR04 |    Echo  |
-|       40      |  GPIO 21 |    PCM_DOUT   |  HC-SR04 |    Gnd   |
-|       12      |  GPIO 18 |    PCM_CLK    |   L298N  |    ENA   |
-|       14      |  Ground  |     Ground    |   L298N  |    Gnd   |
-|       16      |  GPIO 23 |    GPIO 23    |   L298N  |    IN1   |
-|       18      |  GPIO 24 |    GPIO 24    |   L298N  |    IN2   |
-|       29      |  GPIO 5  |    GPIO 5     |   L298N  |    IN3   |
-|       31      |  GPIO 6  |    GPIO 6     |   L298N  |    IN4   |
-|       33      |  GPIO 13 |     PWM1      |   L298N  |    ENB   |
+| Raspberry Pi Pin |   GPIO   | Specification |  Module  | Function |
+| ---------------- | -------: | ------------- | -------- | -------- |
+|       4          | 5V power |      Vcc      |  HC-SR04 |    Vcc   |
+|       9          |  Ground  |     Ground    |  HC-SR04 |    Gnd   |
+|       36         |  GPIO 16 |    GPIO 16    |  HC-SR04 |    Trig  |
+|       38         |  GPIO 20 |    PCM_DIN    |  HC-SR04 |    Echo  |
+|       40         |  GPIO 21 |    PCM_DOUT   |  HC-SR04 |  Divider |
+|       12         |  GPIO 18 |    PCM_CLK    |   L298N  |    ENA   |
+|       14         |  Ground  |     Ground    |   L298N  |    Gnd   |
+|       16         |  GPIO 23 |    GPIO 23    |   L298N  |    IN1   |
+|       18         |  GPIO 24 |    GPIO 24    |   L298N  |    IN2   |
+|       29         |  GPIO 5  |    GPIO 5     |   L298N  |    IN3   |
+|       31         |  GPIO 6  |    GPIO 6     |   L298N  |    IN4   |
+|       33         |  GPIO 13 |     PWM1      |   L298N  |    ENB   |
 
-**Wiring for H-Bridge L298N to base**:
+**L298N connections to the vehicle base**:
 
-| Function | Notes                     |
-| -------- | ------------------------: |
-| OUTPUT A | Front motors of cart base |
-| OUTPUT B | Rear motors of cart base  |
-| Vcc      | Cart base power supply    |
-| Gnd      | Cart base ground          |
+| Function | Notes                            |
+| -------- | -------------------------------: |
+| OUTPUT A | Front motors of the vehicle base |
+| OUTPUT B | Rear motors of the vehicle base  |
+| Vcc      | Vehicle base power supply        |
+| Gnd      | Vehicle base ground              |
 
 
-### 3.2 Voltage divider note
+### 3.2 Voltage Divider Note
 
-Because the HC-SR04 echo output can exceed safe logic levels for Raspberry Pi GPIO input, a voltage divider must be used between the sensor ECHO pin and the Raspberry Pi input pin.
+Because the HC-SR04 `ECHO` output operates at 5 V and Raspberry Pi GPIO inputs are limited to 3.3 V logic, a resistive voltage divider is required before connecting the sensor output to the Raspberry Pi input pin.
 
-Suggested asset reference: **"../assets/wiring.png"**
+In the project wiring, the `ECHO` signal is routed through two resistors arranged as a voltage divider:
+
+- The `ECHO` output from the HC-SR04 first passes through resistor **R1**
+- The junction between **R1** and **R2** is connected to **GPIO 20**, which is used as the input signal pin
+- From that same junction, the circuit passes through resistor **R2** to **GND**
+
+This arrangement reduces the 5 V `ECHO` signal to a safe logic level for the Raspberry Pi.
+
+#### Voltage Divider Calculation
+
+The output voltage at the Raspberry Pi input is calculated as:
+
+`Vout = Vin * (R2 / (R1 + R2))`
+
+Where:
+
+- `Vin` is the HC-SR04 `ECHO` output voltage
+- `R1` is the resistor placed between `ECHO` and the GPIO input junction
+- `R2` is the resistor placed between the GPIO input junction and GND
+- `Vout` is the reduced voltage received by the Raspberry Pi GPIO pin
+
+For safe operation, `Vout` must remain at or below **3.3 V**.
+
+For example, using:
+
+- `Vin = 5.0 V`
+- `R1 = 1 kΩ`
+- `R2 = 2 kΩ`
+
+The resulting output voltage is:
+
+`Vout = 5.0 * (2 / (1 + 2)) = 5.0 * (2 / 3) = 3.33 V`
+
+<p align="center">
+  <img src="../assets/wiring.png" alt="Wiring diagram" width="80%">
+</p>
+
+Suggested asset reference: **`../assets/wiring.png`**
 
 ## 4. ROS Nodes
 
@@ -208,7 +307,7 @@ The package metadata and setup configuration expose the following executable nod
 
 ### 4.2 Topic-level design
 
-The control architecture revolves around two core topics:
+The control architecture is built around the following core topics:
 
 | Topic             | Type                      | Purpose                    |
 | ----------------- | ------------------------- | -------------------------- |
@@ -216,7 +315,7 @@ The control architecture revolves around two core topics:
 | `/emergency_stop` | `std_msgs/msg/Bool`       | Safety brake / stop signal |
 
 
-### 4.3 teleop_motor
+### 4.3 `teleop_motor`
 
 **Purpose**
 
@@ -253,32 +352,46 @@ Use this executable for:
  - simple manual motion tests,
  - SSH-based bench testing.
 
-### 4.4 pruebarayo
+### 4.4 `pruebarayo`
 
 **Purpose**
 
-Integrated ROS 2 executable for:
+Integrated ROS 2 executable used for end-to-end functional validation of the vehicle, combining:
 
-- motion control,
-- emergency stop handling,
-- ultrasonic safety,
-- and AI-assisted ultrasonic calibration during runtime.
+- keyboard-based motion control through WASD input,
+- motor command execution,
+- ultrasonic safety monitoring,
+- and AI-based correction of ultrasonic distance estimation at runtime.
+
+This executable is intended to validate the complete manual-control and sensing pipeline in a single integrated runtime flow.
 
 **Internal roles**
 
 This executable includes at least:
 
-- MotorController
-- TeleopPublisher
-- SafetyUltrasonicNode
+- `MotorController`
+- `TeleopPublisher`
+- `SafetyUltrasonicNode`
 
 **Behavior**
 
-- publishes motion commands to /cmd_vel
-- monitors /cmd_vel to determine whether forward motion is active
-- reads ultrasonic distance
-- applies AI-based correction using model and scaler assets
-- publishes /emergency_stop when obstacle distance falls below the configured danger threshold
+- reads keyboard input and publishes motion commands to `/cmd_vel`
+- allows manual validation of forward, reverse, and steering behavior
+- monitors `/cmd_vel` to determine whether forward motion is active
+- reads ultrasonic distance measurements from the HC-SR04 sensor
+- applies AI-based correction using the loaded model and scaler assets
+- publishes `/emergency_stop` when the corrected obstacle distance falls below the configured danger threshold while forward motion is active
+- stops motor actuation when an emergency stop condition is triggered
+
+**Keyboard controls**
+
+- `W`: forward
+- `S`: reverse
+- `A`: steer left
+- `D`: steer right
+- `C`: center steering
+- `Space`: full stop
+- `Q`: exit
 
 **Current safety threshold**
 
@@ -286,7 +399,7 @@ This executable includes at least:
 DISTANCIA_PELIGRO = 15.0 cm
 ```
 
-**Main interfaces**
+**Main Interfaces**
 
 | Node role              | Publishes         | Subscribes                    |
 | ---------------------- | ----------------- | ----------------------------- |
@@ -294,12 +407,12 @@ DISTANCIA_PELIGRO = 15.0 cm
 | `MotorController`      | —                 | `/cmd_vel`, `/emergency_stop` |
 | `SafetyUltrasonicNode` | `/emergency_stop` | `/cmd_vel`                    |
 
-**AI integration**
+**AI Integration**
 
 This executable loads:
 
-- modelo_calibracion_patched.h5
-- scaler.pkl
+- `modelo_calibracion.h5`
+- `scaler.pkl`
 
 These assets are used to improve raw ultrasonic distance estimation before making safety decisions.
 
@@ -307,78 +420,123 @@ These assets are used to improve raw ultrasonic distance estimation before makin
 
 Use this executable for:
 
-- safety logic validation,
-- ultrasonic calibration experiments,
-- emergency braking tests,
-- combined sensing + control runs.
+- keyboard-based motion validation through WASD control,
+- integrated validation of sensing, control, and emergency-stop behavior,
+- ultrasonic calibration experiments during runtime,
+- emergency braking tests under forward motion,
+- combined manual control + AI-corrected sensing runs.
 
-### 4.5 rayows
+### 4.5 `rayows`
 
 **Purpose**
 
-Integrated runtime for:
+Main integrated runtime of the project, intended as the canonical execution flow for the vehicle system.
 
-- motor control,
-- ultrasonic safety,
-- WebSocket command input,
-- and MJPEG video streaming.
+In its current modular implementation, this runtime integrates:
 
-**Internal roles**
+- ROS 2-based motor control
+- ultrasonic safety monitoring
+- AI-assisted ultrasonic distance correction when calibration assets are available
+- fuzzy speed regulation based on frontal obstacle distance
+- WebSocket command input for external teleoperation
+- MJPEG live video streaming for remote observation
 
-The visible implementation includes:
+This executable is currently under active development and is intended to become the main integration entry point for future sensors, calibration models, and mobile-app-based teleoperation features.
 
-- a motor control node subscribed to /cmd_vel and /emergency_stop
-- an ultrasonic safety node that publishes /emergency_stop
-- a WebSocket interface for external commands
-- an MJPEG HTTP server for live camera streaming
+**Current modular structure**
+
+The visible implementation is currently split into the following modules:
+
+- `rayows.py`: main entry point and runtime orchestration
+- `motor_controller_node.py`: low-level motor control and software PWM execution
+- `safety_ultrasonic_node.py`: frontal distance monitoring, AI-assisted correction, fuzzy braking logic, and emergency-stop signaling
+- `websocket_bridge.py`: remote command intake over WebSocket
+- `camera_stream.py`: continuous camera capture and JPEG frame generation
+- `mjpeg_server.py`: HTTP MJPEG streaming service
+- `video_state.py`: shared frame buffer for the video subsystem
+- `config.py`: centralized runtime configuration
+- `fuzzy.py`: fuzzy braking factor logic
+
+**Current behavior**
+
+- receives remote joystick commands through WebSocket
+- converts those commands into ROS 2 motion references on `/cmd_vel`
+- interprets joystick axes as:
+  - `y -> linear.x` for traction / speed
+  - `x -> angular.z` for steering
+- applies software PWM for both traction and steering control
+- continuously reads frontal distance from the ultrasonic subsystem
+- applies AI-based distance correction when the configured model and scaler are available
+- computes a fuzzy braking factor based on frontal distance
+- publishes the fuzzy speed factor on `/fuzzy_cmd`
+- activates `/emergency_stop` only when forward motion is active and the braking factor reaches a full-stop condition
+- provides a live MJPEG stream for remote observation
+
+**Current ROS interfaces**
+
+| Component                | Publishes                  | Subscribes                                 |
+| ------------------------ | -------------------------- | ------------------------------------------ |
+| `MotorController`        | `/cmd_vel`*, `/emergency_stop`* | `/cmd_vel`, `/emergency_stop`, `/fuzzy_cmd` |
+| `SafetyUltrasonicNode`   | `/fuzzy_cmd`, `/emergency_stop` | `/cmd_vel`                                 |
+| `WebSocketBridge`        | `/cmd_vel`, `/emergency_stop` (through the runtime bridge) | — |
+
+> \* In the current implementation, these publishers are exposed through the motor runtime instance and are used by the WebSocket bridge.
 
 **Current WebSocket configuration**
 
-| Setting   |     Value |
-| --------- | --------: |
-| Host      | `0.0.0.0` |
-| Port      |    `8765` |
-| Move rate |   `20 Hz` |
+| Setting                |     Value |
+| ---------------------- | --------: |
+| Host                   | `0.0.0.0` |
+| Port                   |    `8765` |
+| Move rate              |   `20 Hz` |
+| Expected joystick span | `-10..10` |
 
+**WebSocket command model**
+
+The current implementation accepts commands such as:
+
+- `{"command": "MOVE", "x": ..., "y": ...}`
+- `{"command": "EMERGENCY_STOP"}`
+- `{"command": "RESUME"}`
+- `{"command": "STOP"}`
+
+For `MOVE` commands, joystick values are internally mapped as:
+
+- `x` → steering
+- `y` → traction / speed
+
+These values are normalized internally using the configured joystick limit.
 
 **Current video configuration**
 
 | Setting         |       Value |
 | --------------- | ----------: |
 | Stream endpoint |   `/stream` |
+| HTTP host       | `0.0.0.0`   |
 | HTTP port       |      `8080` |
 | FPS             |        `15` |
 | Resolution      | `640 x 480` |
 | JPEG quality    |        `70` |
 
+**Main external interfaces**
 
-**Accepted WebSocket commands**
-
-The implementation documents support for commands such as:
-
-- {"command": "MOVE", "x": ..., "y": ...}
-- {"command": "EMERGENCY_STOP"}
-- {"command": "RESUME"}
-- {"command": "STOP"}
-
-**Main interfaces**
-
-| Component             | Interface                       |
-| --------------------- | ------------------------------- |
-| Motion command bridge | `/cmd_vel`                      |
-| Safety command        | `/emergency_stop`               |
-| WebSocket server      | `ws://<robot-ip>:8765/`         |
-| MJPEG stream          | `http://<robot-ip>:8080/stream` |
-
+| Interface role      | Endpoint / Topic                  |
+| ------------------- | --------------------------------- |
+| Motion commands     | `/cmd_vel`                        |
+| Safety stop         | `/emergency_stop`                 |
+| Fuzzy speed control | `/fuzzy_cmd`                      |
+| WebSocket server    | `ws://<robot-ip>:8765/`           |
+| MJPEG stream        | `http://<robot-ip>:8080/stream`   |
 
 **Recommended usage**
 
 Use this executable for:
 
-- mobile / remote teleoperation,
-- integrated motor + safety tests,
-- live video observation,
-- early UI-driven control experiments.
+- mobile-app-based teleoperation through WebSocket
+- integrated motor, safety, and video runtime validation
+- testing of fuzzy speed regulation and emergency-stop behavior
+- validation of the current modular runtime architecture
+- future expansion toward full multi-sensor integration in the main system flow
 
 ## 5. Calibration Pipeline
 
@@ -524,7 +682,7 @@ This repository depends on access to:
 - sensor hardware,
 - and camera interfaces.
 
-As a result, full functionality is not reproducible on a generic desktop-only environment.
+As a result, full functionality is not reproducible on a generic desktop-only environment. The main runtime flows are intended to be executed on a Raspberry Pi-based setup with the required hardware connected and properly powered.
 
 ### 7.2 Partial multisensor integration
 
@@ -533,51 +691,84 @@ The project vision includes a multisensory platform, but current validation is s
 - motor control,
 - teleoperation,
 - ultrasonic sensing,
+- ultrasonic safety logic,
 - and ultrasonic calibration.
 
-Camera and ToF integration are still under development.
+Camera streaming is already available as part of the current runtime, but broader multisensor integration and additional sensing modalities are still under development.
 
 ### 7.3 Incomplete sensor fusion stage
 
 The system architecture anticipates a future fusion stage, but full multisensor fusion is not yet implemented.
 
+At the current stage, sensing and safety decisions are still driven mainly by the ultrasonic subsystem, while future sensor fusion logic remains part of the planned system evolution.
+
 ### 7.4 Runtime architecture still evolving
 
-The repository contains multiple executable flows for different testing stages:
+The repository contains multiple executable flows corresponding to different development and validation stages, including:
 
 - keyboard teleoperation,
-- AI-assisted ultrasonic safety,
-- WebSocket + MJPEG operation.
+- AI-assisted ultrasonic safety validation,
+- and modular WebSocket + MJPEG operation through `rayows`.
 
-This is useful during development, but it also means some configuration details such as pin mapping and integration scope still need to be consolidated into a final reference implementation.
+This is useful during development, but it also means that some configuration details, execution scope, and integration boundaries are still being consolidated into a final reference runtime.
 
-### 7.5 Documentation and metrics still in progress
+### 7.5 External mobile app integration is repository-separated
 
-Some sections of the project are already structurally defined in the README, but still need final engineering evidence, including:
+Mobile teleoperation is part of the overall system architecture, but the mobile application is maintained outside this repository.
+
+As a result:
+
+- This repository documents and exposes the robot-side WebSocket and MJPEG interfaces
+- It does not contain the mobile UI implementation itself
+- Complete app-to-robot validation depends on coordination between both repositories
+
+### 7.6 AI-assisted calibration depends on external model assets
+
+Some runtime and validation flows depend on trained calibration assets such as model and scaler files.
+
+If those assets are missing, incompatible, or not deployed in the expected paths, the corresponding AI-assisted correction features may be unavailable or may fall back to raw sensor measurements.
+
+### 7.7 Real-time control constraints
+
+Motor actuation currently relies on software-managed PWM and runtime-level coordination between ROS 2 nodes, safety logic, WebSocket input, and video streaming.
+
+Although this is adequate for the current prototype stage, timing behavior may still vary depending on host load, thread scheduling, and hardware conditions. This should be considered a prototype-level implementation rather than a final hard real-time control architecture.
+
+### 7.8 Documentation and metrics still in progress
+
+Some sections of the project are already structurally defined in the README, but still require final engineering evidence and consolidation, including:
 
 - quantitative error metrics,
-- stable final wiring diagram,
+- stable final wiring documentation,
 - consolidated benchmark results,
-- and clearer mode-by-mode execution notes.
+- final execution notes for each runtime flow,
+- and clearer validation boundaries between current functionality and future planned integration.
 
 
 ## 8. Bill of Materials
 
 > Note: Costs should be updated according to your actual purchases or local supplier quotes.
 
-| Item                            |  Quantity | Purpose                              | Approx. Cost | Notes                       |
-| ------------------------------- | --------: | ------------------------------------ | -----------: | --------------------------- |
-| Raspberry Pi 5                  |         1 | Main embedded controller             |       [TODO] | Main execution platform     |
-| MicroSD / storage               |         1 | OS and project storage               |       [TODO] |                             |
-| Power supply for Raspberry Pi 5 |         1 | Stable power input                   |       [TODO] |                             |
-| HC-SR04 ultrasonic sensor       |         1 | Distance acquisition                 |       [TODO] |                             |
-| Pi Camera Module 3              |         1 | Vision streaming / future perception |       [TODO] |                             |
-| IFM O3D303 ToF sensor           |         1 | Planned depth sensing                |       [TODO] | Optional / future stage     |
-| H-bridge motor driver           |         1 | Motor actuation interface            |       [TODO] |                             |
-| DC traction motor               |         1 | Forward / reverse motion             |       [TODO] |                             |
-| DC steering motor               |         1 | Steering actuation                   |       [TODO] |                             |
-| Voltage divider resistors       |         2 | Safe Echo level adaptation           |       [TODO] |                             |
-| Wiring / jumpers / connectors   |  assorted | Electrical integration               |       [TODO] |                             |
-| Chassis / 1:16 vehicle platform |         1 | Physical prototype base              |       [TODO] | Porsche 911 GT3 RS platform |
-| Ethernet / network accessories  | as needed | Remote setup / connectivity          |       [TODO] |                             |
-| Battery / onboard power stage   |    [TODO] | Vehicle-side power                   |       [TODO] | Update with final design    |
+| Item                              |  Quantity      | Purpose                                        | Approx. Cost (MXN)| Notes                       |
+| --------------------------------  | -------------: | ---------------------------------------------- | ----------------: | --------------------------- |
+| Raspberry Pi 5 (with accessories) |              1 | Main embedded controller                       |     $5,989.00     | Main execution platform     |
+| MicroSD / storage                 |              1 | OS and project storage                         |       $423.00     | Stores Raspberry Pi OS, ROS 2 workspace, configuration, and logs |
+| Power supply for Raspberry Pi 5   |              1 | Stable power input                             |       $199.00     | Dedicated supply for stable operation during development and testing |
+| HC-SR04 ultrasonic sensor         |              1 | Distance acquisition                           |        $57.00     | Used for frontal obstacle detection and safety logic |
+| Pi Camera Module 3                |              1 | Vision streaming / future perception           |       $917.00     | Used for MJPEG streaming and future perception-oriented integration |
+| IFM O3D303 ToF sensor             |              1 | Planned depth sensing                          |    $31,428.00     | Optional component planned for future multisensor perception stages |
+| H-bridge motor driver             |              1 | Motor actuation interface                      |        $98.00     | Interfaces Raspberry Pi control signals with the vehicle motors |
+| Voltage divider resistors         |              2 | Safe Echo level adaptation                     |         $2.00     | One resistive divider for HC-SR04 ECHO to Raspberry Pi GPIO; exact values pending hardware confirmation |
+| Wiring / jumpers / connectors     |     assorted   | Electrical integration                         | $75.00 - $150.00  | Approximate cost for a basic jumper |
+| Chassis / 1:14 vehicle platform   |              1 | Physical prototype base                        |     $1,249.00     | Porsche 911 GT3 RS platform |
+| Chassis battery pack              | 5 AA batteries | Vehicle-side power supply for the chassis base |       $239.00     | Battery pack integrated into the vehicle base |
+
+
+### 8.1 Estimated Total Cost
+
+| Configuration | Estimated Total (MXN) |
+| ------------- | --------------------: |
+| Current prototype (without optional ToF sensor) | $9,248.00 - $9,323.00 |
+| Extended configuration (including IFM O3D303 ToF sensor) | $40,676.00 - $40,751.00 |
+
+> **Note:** The total is presented as a range because the cost of wiring / jumpers / connectors may vary depending on the selected kit or supplier. The IFM O3D303 ToF sensor is considered an optional future-stage component.
