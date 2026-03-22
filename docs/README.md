@@ -283,6 +283,8 @@ The resulting output voltage is:
 
 `Vout = 5.0 * (2 / (1 + 2)) = 5.0 * (2 / 3) = 3.33 V`
 
+The following diagram illustrates the reference hardware wiring used for Raspberry Pi GPIO integration, ultrasonic sensing, and motor control.
+
 <p align="center">
   <img src="../assets/wiring.png" alt="Wiring diagram" width="80%">
 </p>
